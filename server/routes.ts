@@ -1,78 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import session from "express-session";
 import { storage } from "./storage";
 import { insertEnergyReadingSchema, insertTemperatureReadingSchema } from "@shared/schema";
 
-// Session middleware
-function setupSession(app: Express) {
-  app.use(session({
-    secret: 'energy-monitoring-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // Set to true in production with HTTPS
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    },
-  }));
-}
-
-// Authentication middleware
-function requireAuth(req: any, res: any, next: any) {
-  if (req.session && req.session.isAuthenticated) {
-    return next();
-  }
-  return res.status(401).json({ message: 'Unauthorized' });
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup session middleware
-  setupSession(app);
-
-  // Authentication endpoints
-  app.post('/api/login', async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password required' });
-      }
-
-      const isValid = await storage.authenticateUser(email, password);
-      
-      if (isValid) {
-        (req.session as any).isAuthenticated = true;
-        (req.session as any).userEmail = email;
-        res.json({ success: true, message: 'Login successful' });
-      } else {
-        res.status(401).json({ message: 'Invalid credentials' });
-      }
-    } catch (error) {
-      res.status(500).json({ message: 'Login failed' });
-    }
-  });
-
-  app.post('/api/logout', (req, res) => {
-    req.session?.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: 'Logout failed' });
-      }
-      res.json({ success: true, message: 'Logout successful' });
-    });
-  });
-
-  app.get('/api/auth/status', (req, res) => {
-    const isAuthenticated = !!(req.session as any)?.isAuthenticated;
-    const userEmail = (req.session as any)?.userEmail;
-    res.json({ 
-      isAuthenticated, 
-      userEmail: isAuthenticated ? userEmail : null 
-    });
-  });
-
   // Energy endpoints
-  app.get("/api/energy/readings", requireAuth, async (req, res) => {
+  app.get("/api/energy/readings", async (req, res) => {
     try {
       const hours = req.query.hours ? parseInt(req.query.hours as string) : 24;
       const readings = await storage.getEnergyReadings(hours);
@@ -82,7 +15,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/energy/readings", requireAuth, async (req, res) => {
+  app.post("/api/energy/readings", async (req, res) => {
     try {
       const data = insertEnergyReadingSchema.parse(req.body);
       const reading = await storage.createEnergyReading(data);
@@ -92,7 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/energy/stats", requireAuth, async (req, res) => {
+  app.get("/api/energy/stats", async (req, res) => {
     try {
       const stats = await storage.getEnergyStats();
       res.json(stats);
@@ -102,7 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Temperature endpoints
-  app.get("/api/temperature/readings", requireAuth, async (req, res) => {
+  app.get("/api/temperature/readings", async (req, res) => {
     try {
       const hours = req.query.hours ? parseInt(req.query.hours as string) : 24;
       const readings = await storage.getTemperatureReadings(hours);
@@ -112,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/temperature/readings", requireAuth, async (req, res) => {
+  app.post("/api/temperature/readings", async (req, res) => {
     try {
       const data = insertTemperatureReadingSchema.parse(req.body);
       const reading = await storage.createTemperatureReading(data);
@@ -122,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/temperature/current", requireAuth, async (req, res) => {
+  app.get("/api/temperature/current", async (req, res) => {
     try {
       const temperature = await storage.getCurrentTemperature();
       res.json({ temperature });
@@ -131,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/temperature/stats", requireAuth, async (req, res) => {
+  app.get("/api/temperature/stats", async (req, res) => {
     try {
       const stats = await storage.getTemperatureStats();
       res.json(stats);
@@ -141,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Billing endpoints
-  app.get("/api/billing/slabs", requireAuth, async (req, res) => {
+  app.get("/api/billing/slabs", async (req, res) => {
     try {
       const slabs = await storage.getBillingSlabs();
       res.json(slabs);
@@ -150,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/billing/calculate", requireAuth, async (req, res) => {
+  app.get("/api/billing/calculate", async (req, res) => {
     try {
       const units = req.query.units ? parseFloat(req.query.units as string) : 0;
       const bill = await storage.calculateBill(units);
@@ -160,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/billing/predict", requireAuth, async (req, res) => {
+  app.get("/api/billing/predict", async (req, res) => {
     try {
       const currentUnits = req.query.units ? parseFloat(req.query.units as string) : 0;
       const prediction = await storage.predictNextSlabCrossing(currentUnits);
