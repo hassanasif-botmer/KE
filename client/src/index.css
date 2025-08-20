@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(210 25% 7.8431%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(210 25% 7.8431%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(210 25% 7.8431%);
+  --primary: hsl(214.2857 100% 59.6078%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(159.6429 100% 36.0784%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --accent: hsl(42.2449 100% 50%);
+  --accent-foreground: hsl(0 0% 100%);
+  --muted: hsl(220 14.2857% 95.8824%);
+  --muted-foreground: hsl(220 8.3333% 46.2745%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(220 13% 91%);
+  --input: hsl(220 13% 91%);
+  --ring: hsl(214.2857 100% 59.6078%);
+  --chart-1: hsl(214.2857 100% 59.6078%);
+  --chart-2: hsl(159.6429 100% 36.0784%);
+  --chart-3: hsl(42.2449 100% 50%);
+  --chart-4: hsl(147.1429 78.5047% 41.9608%);
+  --chart-5: hsl(341.4894 75.2000% 50.9804%);
+  --font-sans: Inter, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(0 0% 3.9216%);
+  --foreground: hsl(0 0% 98.0392%);
+  --card: hsl(0 0% 3.9216%);
+  --card-foreground: hsl(0 0% 98.0392%);
+  --popover: hsl(0 0% 3.9216%);
+  --popover-foreground: hsl(0 0% 98.0392%);
+  --primary: hsl(214.2857 100% 59.6078%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(159.6429 100% 36.0784%);
+  --secondary-foreground: hsl(0 0% 100%);
+  --accent: hsl(42.2449 100% 50%);
+  --accent-foreground: hsl(0 0% 100%);
+  --muted: hsl(0 0% 14.9020%);
+  --muted-foreground: hsl(0 0% 63.9216%);
+  --destructive: hsl(356.3033 90.5579% 54.3137%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --border: hsl(0 0% 14.9020%);
+  --input: hsl(0 0% 14.9020%);
+  --ring: hsl(214.2857 100% 59.6078%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gray-50 font-sans antialiased text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Recharts custom styling */
+.recharts-wrapper {
+  font-family: var(--font-sans);
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-size: 12px;
+  fill: hsl(var(--muted-foreground));
+}
+
+.recharts-legend-item-text {
+  color: hsl(var(--foreground)) !important;
+}
