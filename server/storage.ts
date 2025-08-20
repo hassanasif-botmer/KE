@@ -2,6 +2,9 @@ import { type EnergyReading, type InsertEnergyReading, type TemperatureReading, 
 import { randomUUID } from "crypto";
 
 export interface IStorage {
+  // Authentication
+  authenticateUser(email: string, password: string): Promise<boolean>;
+  
   // Energy readings
   getEnergyReadings(hours?: number): Promise<EnergyReading[]>;
   createEnergyReading(reading: InsertEnergyReading): Promise<EnergyReading>;
@@ -311,6 +314,11 @@ export class MemStorage implements IStorage {
       nextSlabRate: nextSlab.ratePerKwh,
       estimatedCostIncrease: Math.round(estimatedCostIncrease),
     };
+  }
+
+  async authenticateUser(email: string, password: string): Promise<boolean> {
+    // Static authentication for admin user
+    return email === 'admin@gmail.com' && password === 'admin';
   }
 }
 
