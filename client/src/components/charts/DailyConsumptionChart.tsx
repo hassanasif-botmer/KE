@@ -9,7 +9,8 @@ interface DailyConsumptionChartProps {
 
 export default function DailyConsumptionChart({ variant = "energy" }: DailyConsumptionChartProps) {
   const { data: readings, isLoading } = useQuery<EnergyReading[]>({
-    queryKey: ["/api/energy/readings", { hours: 168 }], // Last 7 days
+    queryKey: ["/api/energy/readings"],
+    queryFn: () => fetch(`/api/energy/readings?hours=168`).then(res => res.json()),
   });
 
   // Group readings by day and calculate daily totals

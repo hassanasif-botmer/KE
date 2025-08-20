@@ -10,10 +10,16 @@ interface TemperatureChartProps {
 
 export default function TemperatureChart({ variant = "full", hours = 24 }: TemperatureChartProps) {
   const { data: readings, isLoading } = useQuery<TemperatureReading[]>({
-    queryKey: ["/api/temperature/readings", { hours }],
+    queryKey: ["/api/temperature/readings"],
+    queryFn: () => fetch(`/api/temperature/readings?hours=${hours}`).then(res => res.json()),
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{
+    current: number;
+    todayHigh: number;
+    todayLow: number;
+    average24h: number;
+  }>({
     queryKey: ["/api/temperature/stats"],
   });
 

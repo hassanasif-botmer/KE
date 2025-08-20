@@ -93,6 +93,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/billing/predict", async (req, res) => {
+    try {
+      const currentUnits = req.query.units ? parseFloat(req.query.units as string) : 0;
+      const prediction = await storage.predictNextSlabCrossing(currentUnits);
+      res.json(prediction);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to predict next slab crossing" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

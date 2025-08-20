@@ -35,6 +35,13 @@ export interface IStorage {
     taxes: number;
     totalBill: number;
   }>;
+  predictNextSlabCrossing(currentUnits: number): Promise<{
+    nextSlabThreshold: number;
+    daysToNextSlab: number;
+    averageDailyUsage: number;
+    nextSlabRate: number;
+    estimatedCostIncrease: number;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -52,10 +59,12 @@ export class MemStorage implements IStorage {
   private initializeDefaultData() {
     // Initialize billing slabs based on KE tariff structure
     const slabs = [
-      { slabNumber: 1, minUnits: 1, maxUnits: 100, ratePerKwh: 5.79 },
-      { slabNumber: 2, minUnits: 101, maxUnits: 200, ratePerKwh: 8.11 },
-      { slabNumber: 3, minUnits: 201, maxUnits: 300, ratePerKwh: 10.20 },
-      { slabNumber: 4, minUnits: 301, maxUnits: null, ratePerKwh: 17.60 },
+      { slabNumber: 1, minUnits: 0, maxUnits: 100, ratePerKwh: 22 },
+      { slabNumber: 2, minUnits: 101, maxUnits: 200, ratePerKwh: 25 },
+      { slabNumber: 3, minUnits: 201, maxUnits: 300, ratePerKwh: 28 },
+      { slabNumber: 4, minUnits: 301, maxUnits: 400, ratePerKwh: 30 },
+      { slabNumber: 5, minUnits: 401, maxUnits: 600, ratePerKwh: 32 },
+      { slabNumber: 6, minUnits: 601, maxUnits: null, ratePerKwh: 35 },
     ];
 
     slabs.forEach(slab => {
@@ -97,7 +106,7 @@ export class MemStorage implements IStorage {
         id,
         timestamp,
         temperature: Math.round(temperature * 10) / 10,
-        humidity: 45 + Math.random() * 20,
+        humidity: Math.round((45 + Math.random() * 20) * 10) / 10,
       });
     }
   }
@@ -160,6 +169,7 @@ export class MemStorage implements IStorage {
       ...insertReading,
       id,
       timestamp: new Date(),
+      humidity: insertReading.humidity ?? null,
     };
     this.temperatureReadings.set(id, reading);
     return reading;
@@ -244,6 +254,62 @@ export class MemStorage implements IStorage {
       totalEnergyCharges: Math.round(totalEnergyCharges),
       taxes,
       totalBill,
+    };
+  }
+
+  async predictNextSlabCrossing(currentUnits: number): Promise<{
+    nextSlabThreshold: number;
+    daysToNextSlab: number;
+    averageDailyUsage: number;
+    nextSlabRate: number;
+    estimatedCostIncrease: number;
+  }> {
+    const slabs = await this.getBillingSlabs();
+    
+    // Find current slab
+    let currentSlab = slabs[0];
+    for (const slab of slabs) {
+      if (slab.maxUnits === null || currentUnits <= slab.maxUnits) {
+        currentSlab = slab;
+        break;
+      }
+    }
+
+    // Find next slab
+    const nextSlabIndex = slabs.findIndex(s => s.slabNumber === currentSlab.slabNumber) + 1;
+    const nextSlab = nextSlabIndex < slabs.length ? slabs[nextSlabIndex] : null;
+
+    if (!nextSlab || currentSlab.maxUnits === null) {
+      // Already in highest slab
+      return {
+        nextSlabThreshold: -1,
+        daysToNextSlab: -1,
+        averageDailyUsage: 0,
+        nextSlabRate: currentSlab.ratePerKwh,
+        estimatedCostIncrease: 0,
+      };
+    }
+
+    // Calculate average daily usage from last 30 days
+    const readings = await this.getEnergyReadings(24 * 30);
+    const dailyUsage = readings.length > 0 
+      ? readings.reduce((sum, r) => sum + r.consumption, 0) / Math.max(1, readings.length / 24)
+      : 3.5; // Fallback average
+
+    const unitsToNextSlab = currentSlab.maxUnits! - currentUnits;
+    const daysToNextSlab = Math.ceil(unitsToNextSlab / dailyUsage);
+    
+    // Calculate cost increase when crossing to next slab
+    const currentBill = await this.calculateBill(currentUnits);
+    const nextSlabBill = await this.calculateBill(currentSlab.maxUnits! + 10); // 10 units into next slab
+    const estimatedCostIncrease = (nextSlabBill.totalBill - currentBill.totalBill) / 10; // per unit increase
+
+    return {
+      nextSlabThreshold: currentSlab.maxUnits!,
+      daysToNextSlab: Math.max(1, daysToNextSlab),
+      averageDailyUsage: Math.round(dailyUsage * 10) / 10,
+      nextSlabRate: nextSlab.ratePerKwh,
+      estimatedCostIncrease: Math.round(estimatedCostIncrease),
     };
   }
 }
